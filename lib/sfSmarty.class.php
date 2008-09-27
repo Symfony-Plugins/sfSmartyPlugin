@@ -177,7 +177,7 @@ class sfSmarty {
 	 **/
 	protected function loadCoreAndStandardHelpers()
 	{
-		$core_helpers = array('Helper', 'Url', 'Asset', 'Tag', 'Escaping');
+		$core_helpers = array('Helper', 'Url', 'Asset', 'Tag', 'Escaping', 'AppUrl');
 		$standard_helpers = sfConfig::get('sf_standard_helpers');
 		$helpers = array_unique(array_merge($core_helpers, $standard_helpers));
 		foreach ($helpers as $helperName) {
