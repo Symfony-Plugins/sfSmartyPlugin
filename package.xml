@@ -10,11 +10,11 @@
   <email>jesse.badwal@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2008-09-08</date>
+ <date>2008-12-06</date>
  <time>19:26:35</time>
  <version>
-  <release>0.1.0</release>
-  <api>1.1.1</api>
+  <release>0.1.2</release>
+  <api>1.2.0</api>
  </version>
  <stability>
   <release>alpha</release>
@@ -25,7 +25,7 @@
  <contents>
   <dir name="/">
    <file role="data" name="README" />
-   <file role="data" name="LICENSE" />
+   <file role="data" name="LICENSE" ></file>
    <dir name="config">
     <file role="data" name="autoload.yml" />
    </dir>
@@ -61,11 +61,11 @@
     <name>symfony</name>
     <channel>pear.symfony-project.com</channel>
     <min>1.2.0</min>
-    <max></max>
+    <max>1.2</max>
     <exclude>1.1</exclude>
    </package>
   </required>
  </dependencies>
  <phprelease />
- <changelog />
+ <changelog ></changelog>
 </package>
