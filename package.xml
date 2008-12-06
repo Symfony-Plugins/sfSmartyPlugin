@@ -41,7 +41,7 @@
      <file role="data" name="SmartyEscapingHelper.php" />
      <file role="data" name="SmartyJavascriptHelper.php" />
      <file role="data" name="SmartyTagHelper.php" />
-    </dir>
+     <file role="data" name="AppUrlHelper.php"></file></dir>
    </dir>
    <dir name="templates">
     <file role="data" name="indexSuccess.tpl" />
@@ -60,9 +60,9 @@
    <package>
     <name>symfony</name>
     <channel>pear.symfony-project.com</channel>
-    <min>1.1.0</min>
-    <max>1.1.1</max>
-    <exclude>1.0.0</exclude>
+    <min>1.2.0</min>
+    <max></max>
+    <exclude>1.1</exclude>
    </package>
   </required>
  </dependencies>
