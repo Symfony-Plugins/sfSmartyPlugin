@@ -70,7 +70,8 @@ class sfSmarty {
 			if (substr($smartyClassPath, -1) != DIRECTORY_SEPARATOR) {
 				$smartyClassPath .= DIRECTORY_SEPARATOR;
 			}
-			require_once($smartyClassPath . 'Smarty.class.php');
+
+			require_once(dirname(__FILE__).'/../../../'.$smartyClassPath . 'Smarty.class.php');
 			self::$smarty = new Smarty();
 
 			// set the smarty cache directory
@@ -206,6 +207,7 @@ class sfSmarty {
 				$dirs = array_merge($dirs, array(dirname(__FILE__) . '/helper'));
 			}
 		
+			
 			$fileName = $helperName . 'Helper.php';
 			$path = '';
 			foreach($dirs as $dir) {
@@ -222,7 +224,7 @@ class sfSmarty {
 		try {
 			sfLoader::loadHelpers(array($helperName, 'Smarty' . $helperName));
 		}
-		catch (sfViewException $e) {
+		catch (Exception $e) {
 			if (!strpos($e->getMessage(), 'Smarty' . $helperName)) {
 				throw $e;
 			}

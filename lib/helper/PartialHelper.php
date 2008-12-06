@@ -14,7 +14,7 @@
  * @package    symfony
  * @subpackage helper
  * @author     Fabien Potencier <fabien.potencier@symfony-project.com>
- * @version    SVN: $Id: PartialHelper.php 10227 2008-07-11 19:36:32Z fabien $
+ * @version    SVN: $Id: PartialHelper.php 13463 2008-11-28 15:35:54Z fabien $
  */
 
 /**
@@ -135,10 +135,15 @@ function get_component($moduleName, $componentName, $vars = array())
 {
   $context = sfContext::getInstance();
   $actionName = '_'.$componentName;
-
-  $partial_view_class = 'sfSmartyPartialView'; //sfConfig::get('mod_'.strtolower($moduleName).'_partial_view_class', 'sfPartial') . 'View';
-
-  $view = new $partial_view_class($context, $moduleName, $actionName, '');      
+  
+  $config = sfConfig::get('mod_'.$moduleName.'_partial_view_class');  
+  if (empty($config)) {
+  	require(sfContext::getInstance()->getConfigCache()->checkConfig('modules/'.$moduleName.'/config/module.yml', true)); 
+  	$config = sfConfig::get('mod_'.$moduleName.'_partial_view_class','sf'); 
+  }
+  
+  $class =  $config.'PartialView';
+  $view = new $class($context, $moduleName, $actionName, '');
   $view->setPartialVars($vars);
 
   if ($retval = $view->getCache())
@@ -212,9 +217,13 @@ function get_partial($templateName, $vars = array())
   }
   $actionName = '_'.$templateName;
 
-  $partial_view_class = 'sfSmartyPartialView'; //sfConfig::get('mod_'.strtolower($moduleName).'_partial_view_class', 'sfPartial') . 'View';
-  
-  $view = new $partial_view_class($context, $moduleName, $actionName, '');
+  $config = sfConfig::get('mod_'.$moduleName.'_partial_view_class');  
+  if (empty($config)) {
+  	require(sfContext::getInstance()->getConfigCache()->checkConfig('modules/'.$moduleName.'/config/module.yml', true)); 
+  	$config = sfConfig::get('mod_'.$moduleName.'_partial_view_class','sf'); 
+  }
+  $class =  $config.'PartialView';
+  $view = new $class($context, $moduleName, $actionName, '');
   $view->setPartialVars($vars);
 
   return $view->render();
@@ -356,7 +365,8 @@ function _call_component($moduleName, $componentName, $vars)
   // load component's module config file
   require($context->getConfigCache()->checkConfig('modules/'.$moduleName.'/config/module.yml'));
 
-  $componentInstance->getVarHolder()->add($vars);
+  // pass unescaped vars to the component
+  $componentInstance->getVarHolder()->add(sfOutputEscaper::unescape($vars));
 
   // dispatch component
   $componentToRun = 'execute'.ucfirst($componentName);
