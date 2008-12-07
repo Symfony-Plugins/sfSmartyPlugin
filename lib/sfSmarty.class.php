@@ -202,7 +202,7 @@ class sfSmarty {
 		}
 		if (!self::$cache->has($helperName)) {
 			if (!is_array($dirs)) {
-				$dirs = sfLoader::getHelperDirs(/*$moduleName*/);
+				$dirs = sfProjectConfiguration::getActive()->getHelperDirs(/*$moduleName*/);
 				$dirs = array_merge($dirs, explode(PATH_SEPARATOR, ini_get('include_path')));
 				$dirs = array_merge($dirs, array(dirname(__FILE__) . '/helper'));
 			}
@@ -222,7 +222,7 @@ class sfSmarty {
 		eval(self::$cache->get($helperName));
 				
 		try {
-			sfLoader::loadHelpers(array($helperName, 'Smarty' . $helperName));
+			sfProjectConfiguration::getActive()->loadHelpers(array($helperName, 'Smarty' . $helperName));
 		}
 		catch (Exception $e) {
 			if (!strpos($e->getMessage(), 'Smarty' . $helperName)) {
