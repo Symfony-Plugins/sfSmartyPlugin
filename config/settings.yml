@@ -1,0 +1,3 @@
+all:
+  smarty:
+    helpers: [SmartyEscaping, SmartyJavascript, SmartyTag]

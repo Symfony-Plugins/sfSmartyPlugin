@@ -10,19 +10,19 @@
  **/
 class sfSmarty {
 
+	/**
+	 * Smarty instance 
+	 *
+	 * @var Smarty
+	 */
     protected static $smarty = null;
   	protected static $templateSecurity = false;
   	protected static $cache;
   	protected static $log;
   	
-  	protected static $usedHelpers;
-  	
-	protected static $smartyHelperLoaded = false;
+  	protected static $loadedHelpers;
     protected static $knownFunctions;
-    protected static $loadedHelpers;
-
-    //const CACHENAMESPACE = 'Smarty';
-	
+    
     /**
      * sfSmarty constructor
      *
@@ -47,7 +47,7 @@ class sfSmarty {
             	self::$log = sfConfig::get('sf_logging_enabled')? sfContext::getInstance()->getLogger() : false;
     		}        	
     		if (!self::$cache) {
-            	self::$cache = new sfFileCache(array("cache_dir" => sfConfig::get('sf_cache_dir')));
+            	self::$cache = new sfFileCache(array('cache_dir' => sfConfig::get('sf_cache_dir')));
     		}
     		if (!self::$smarty) {
     			self::$smarty = $instance->getSmarty();
@@ -101,51 +101,55 @@ class sfSmarty {
 		return self::$smarty;
    	}
    	
+   	/**
+   	 * Escapes smarty stored vars and stores in sf_data
+   	 * // TODO: Optimize.. Data is often escaped multiple times
+   	 *
+   	 * @param sfSmartyView $view
+   	 * @param integer $escaping
+   	 * @return sfOutputEscaper
+   	 */
    	private function getSfData($view, $escaping = ESC_RAW) 
    	{
    		$current_sf_data = self::$smarty->get_template_vars('sf_data');
-		if (empty($current_sf_data)) {
-			$sf_data = sfOutputEscaper::escape($escaping, $view->getAttributeHolder()->getAll());	
-		} else {
-			foreach ($current_sf_data as $key => $value) {
-				$c_sf_data[$key] = $value;
+		if (!empty($current_sf_data) && $view->getAttributeHolder()->get('sf_type') == 'partial') {
+			if (isset($current_sf_data['sf_content'])) {
+				$view->getAttributeHolder()->set('sf_content',$current_sf_data['sf_content']);
 			}
-			$sf_data = sfOutputEscaper::escape($escaping, array_merge($view->getAttributeHolder()->getAll(), $c_sf_data)); 
-		}
-		return $sf_data;
+		} 
+		return sfOutputEscaper::escape($escaping, $view->getAttributeHolder()->getAll());
    	}
    	
     /**
     * sfSmarty::renderFile()
     * render template file using Smarty
     *
-    * @param sfView $view
+    * @param sfSmartyView $view
     * @param mixed $file
     * @return 
 	* @access protected
     **/
 	public function renderFile($view, $file)
-	{	
+	{
 		$sf_context = sfContext::getInstance();
 		$sf_request = $sf_context->getRequest(); 
 		$sf_params = $sf_request->getParameterHolder();
 		$sf_user = $sf_context->getUser();
 		
-		self::$smarty->compile_id = $sf_context->getModuleName();
-		self::$usedHelpers = array();
+		self::$smarty->compile_id = $view->getModuleName();
 		
-		$view->setTemplate($file);		
 		$this->loadCoreAndStandardHelpers();
 		
 		$_escaping = $view->getAttributeHolder()->getEscaping();
-		if ($_escaping == 'on') {
+		if ($_escaping === true || $_escaping == 'on') {
 			$sf_data = $this->getSfData($view, $view->getAttributeHolder()->getEscapingMethod());
-			self::$smarty->assign_by_ref('sf_data', $sf_data);			
 		} elseif ($_escaping === false || $_escaping == 'off') {
 			$sf_data = $this->getSfData($view);
 			self::$smarty->assign($view->getAttributeHolder()->getAll());
-			self::$smarty->assign_by_ref('sf_data', $sf_data);
 		}	
+		
+		// we need to add the data to smarty
+		self::$smarty->assign_by_ref('sf_data', $sf_data);			
 		
 		// we need to add the context to smarty
 		self::$smarty->assign_by_ref('sf_context', $sf_context);
@@ -159,15 +163,7 @@ class sfSmarty {
 		// we need to add the user to smarty
 		self::$smarty->assign_by_ref('sf_user', $sf_user);
 		
-		/*
-		$er = error_reporting();
-		if ($er > E_STRICT) {
-			error_reporting($er - E_STRICT);
-		}*/
-		
-		$result = self::$smarty->fetch("file:$file");
-		//error_reporting($er);
-		return $result;       		
+		return self::$smarty->fetch("file:$file");       		
 	}
 	    
 	/**
@@ -182,8 +178,12 @@ class sfSmarty {
 		$standard_helpers = sfConfig::get('sf_standard_helpers');
 		$helpers = array_unique(array_merge($core_helpers, $standard_helpers));
 		foreach ($helpers as $helperName) {
-			$this->loadHelper($helperName);
+			if (!isset(self::$loadedHelpers[$helperName])) {
+				$this->loadHelper($helperName);
+			}
 		}
+		$smarty_helpers = sfConfig::get('sf_smarty_helpers');
+		sfProjectConfiguration::getActive()->loadHelpers(array_unique(array_merge($helpers, $smarty_helpers)));
 	}
 
 	/**
@@ -195,18 +195,11 @@ class sfSmarty {
 	 **/
 	protected function loadHelper($helperName)
 	{
-		static $dirs;
-		self::$usedHelpers[$helperName] = true;
-		if (isset(self::$loadedHelpers[$helperName])) {
-			return;
-		}
 		if (!self::$cache->has($helperName)) {
-			if (!is_array($dirs)) {
+			static $dirs;
+			if (!is_array($dirs)) {	
 				$dirs = sfProjectConfiguration::getActive()->getHelperDirs(/*$moduleName*/);
-				$dirs = array_merge($dirs, explode(PATH_SEPARATOR, ini_get('include_path')));
-				$dirs = array_merge($dirs, array(dirname(__FILE__) . '/helper'));
 			}
-		
 			
 			$fileName = $helperName . 'Helper.php';
 			$path = '';
@@ -218,17 +211,7 @@ class sfSmarty {
 				}
 			}
 		}
-        
 		eval(self::$cache->get($helperName));
-				
-		try {
-			sfProjectConfiguration::getActive()->loadHelpers(array($helperName, 'Smarty' . $helperName));
-		}
-		catch (Exception $e) {
-			if (!strpos($e->getMessage(), 'Smarty' . $helperName)) {
-				throw $e;
-			}
-		}
 		self::$loadedHelpers[$helperName] = true;
 	}
 	

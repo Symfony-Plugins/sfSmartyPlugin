@@ -1,122 +1,118 @@
 <?php
 
-/**
- * sfSmartyPartialView
+/*
+ * This file is part of the symfony package.
+ * (c) 2004-2006 Fabien Potencier <fabien.potencier@symfony-project.com>
  *
- * @package
- * @author georg
- * @copyright Copyright (c) 2006
- * @version $Id$
- * @access public
- **/
-class sfSmartyPartialView extends sfPartialView {
-    
-	protected static $smarty = null;
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+/**
+ * A View to render partials.
+ *
+ * @package    sfSmartyPlugin
+ * @subpackage lib
+ * @author     Fabien Potencier <fabien.potencier@symfony-project.com>
+ * @version    SVN: $Id: sfSmartyPartialView.class.php 13479 2008-11-29 13:52:41Z Kris.Wallsmith $
+ */
+class sfSmartyPartialView extends sfSmartyView {
 	
-	/**
-	 * sfSmartyPartialView::initialize()
-	 * This method is used instead of sfPartialView::initialze
-	 *
-	 * @param mixed $context
-	 * @param mixed $moduleName
-	 * @param mixed $actionName
-	 * @param mixed $viewName
-	 * @return
-	 **/
-    public function initialize($context, $moduleName, $actionName, $viewName)
-    {
-		$this->setExtension(sfConfig::get('app_sfSmarty_template_extension', '.tpl'));
-		parent::initialize($context, $moduleName, $actionName, $viewName);
-        self::$smarty = sfSmarty::getInstance();
-
-        if (sfConfig::get('sf_logging_enabled'))
-        {
-            $this->dispatcher->notify(new sfEvent($this, 'application.log', array('{sfSmartyPartialView} is used for rendering')));
-        }	
-        return true;
-    }
-
-    /**
-     * sfSmartyPartialView::getEngine()
-     * returns the smarty instance
-     *
-     * @return smarty instance
-     */
-    public function getEngine()
-    {
-        return self::$smarty;
-    }
-    
-	/**
-	 * sfSmartyPartialView::renderFile()
-	 * this method is unsed instead of sfPartialView::renderFile()
-	 *
-	 * @param mixed $file
-	 * @return
-	 * @access protected
-	 **/
-    protected function renderFile($file)
-    {
-        if (sfConfig::get('sf_logging_enabled'))
-        {
-            $this->dispatcher->notify(new sfEvent($this, 'application.log', array('{sfSmartyPartialView} renderFile '.$file)));
-        }
-        return $this->getEngine()->renderFile($this, $file);
-    }
+	protected $partialVars = array();
 
 	/**
-	 * sfSmartyPartialView::registerBlock()
-	 * this is an access function to the internal smarty instance
-	 * to register a block function
-	 *
-	 * @param mixed $tag
-	 * @param mixed $function
-	 * @return
-	 **/
-	public static function registerBlock($tag, $function)
+	 * Executes any presentation logic for this view.
+	 */
+	public function execute()
 	{
-		self::$smarty->registerBlock($tag, $function);
 	}
 
 	/**
-	 * sfSmartyPartialView::registerFunction()
-	 * this is an access function to the internal smarty instance
-	 * to register a function
-	 *
-	 * @param mixed $tag
-	 * @param mixed $function
-	 * @return
-	 **/
-	public static function registerFunction($tag, $function)
+	 * @param array $partialvars
+	 */
+	public function setPartialVars(array $partialVars)
 	{
-		self::$smarty->registerFunction($tag, $function);
+		$this->partialVars = $partialVars;
+		$this->getAttributeHolder()->add($partialVars);
 	}
 
-    /**
-     * sfSmartyPartialView::registerCompilerFunction()
-     * this is an access function to the internal smarty instance
-     * to register a compiler function
-     *
-     * @param mixed $tag
-     * @param mixed $function
-     * @return
-     **/
-    public static function registerCompilerFunction($tag, $function)
-    {
-        self::$smarty->registerCompilerFunction($tag, $function);
-    }
-          
 	/**
-	 * sfSmartyPartialView::registerModifier()
-	 * this is an access function to the internal smarty instance
-	 * to register a modifier
-	 *
-	 * @param mixed $tag
-	 * @param mixed $function
-	 * @return
-	 **/
-	public static function registerModifier($tag, $function)
+	 * Configures template for this view.
+	 */
+	public function configure()
 	{
-		self::$smarty->registerModifier($tag, $function);
-	}       
+		$this->setDecorator(false);
+		$this->setTemplate($this->actionName.$this->getExtension());
+		if ('global' == $this->moduleName)
+		{
+			$this->setDirectory($this->context->getConfiguration()->getDecoratorDir($this->getTemplate()));
+		}
+		else
+		{
+			$this->setDirectory($this->context->getConfiguration()->getTemplateDir($this->moduleName, $this->getTemplate()));
+		}
+	}
+
+	/**
+	 * Renders the presentation.
+	 *
+	 * @return string Current template content
+	 */
+	public function render()
+	{
+		if (sfConfig::get('sf_debug') && sfConfig::get('sf_logging_enabled'))
+		{
+			$timer = sfTimerManager::getTimer(sprintf('Partial "%s/%s"', $this->moduleName, $this->actionName));
+		}
+
+		if ($retval = $this->getCache())
+		{
+			return $retval;
+		}
+		else if (sfConfig::get('sf_cache'))
+		{
+			$mainResponse = $this->context->getResponse();
+			$responseClass = get_class($mainResponse);
+			$this->context->setResponse($response = new $responseClass($this->context->getEventDispatcher(), array_merge($mainResponse->getOptions(), array('content_type' => $mainResponse->getContentType()))));
+		}
+
+		// execute pre-render check
+		$this->preRenderCheck();
+
+		$this->getAttributeHolder()->set('sf_type', 'partial');
+
+		// render template
+		$retval = $this->renderFile($this->getDirectory().'/'.$this->getTemplate());
+
+		if (sfConfig::get('sf_cache'))
+		{
+			$retval = $this->viewCache->setPartialCache($this->moduleName, $this->actionName, $this->cacheKey, $retval);
+			$this->context->setResponse($mainResponse);
+			$mainResponse->merge($response);
+		}
+
+		if (sfConfig::get('sf_debug') && sfConfig::get('sf_logging_enabled'))
+		{
+			$timer->addTime();
+		}
+
+		return $retval;
+	}
+
+	public function getCache()
+	{
+		if (!sfConfig::get('sf_cache'))
+		{
+			return null;
+		}
+
+		$this->viewCache = $this->context->getViewCacheManager();
+		$this->viewCache->registerConfiguration($this->moduleName);
+
+		$this->cacheKey = $this->viewCache->computeCacheKey($this->partialVars);
+		if ($retval = $this->viewCache->getPartialCache($this->moduleName, $this->actionName, $this->cacheKey))
+		{
+			return $retval;
+		}
+	}
 }
