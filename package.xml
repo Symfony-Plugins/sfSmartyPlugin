@@ -13,8 +13,8 @@
  <date>2008-12-25</date>
  <time>06:34:35</time>
  <version>
-  <release>0.2.0</release>
-  <api>1.2.0</api>
+  <release>0.2.1</release>
+  <api>1.0.0</api>
  </version>
  <stability>
   <release>beta</release>
@@ -64,5 +64,24 @@
   </required>
  </dependencies>
  <phprelease />
- <changelog ></changelog>
+    <changelog>
+      <release>
+        <version>
+          <release>0.2.1</release>
+          <api>1.0.0</api>
+        </version>
+        <stability>
+          <release>beta</release>
+          <api>stable</api>
+        </stability>
+        <license uri="http://www.symfony-project.com/license">
+          MIT license
+        </license>
+        <date>2008-12-25</date>
+        <license>MIT</license>
+        <notes>
+           * insaini: Updated README, fixed caching with old partial view class, optimized renderFile and load helpers methods, and allowed rendering of .php via parent class automatically.
+        </notes>
+      </release>
+    </changelog> 
 </package>
