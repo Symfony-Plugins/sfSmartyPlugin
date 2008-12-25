@@ -80,9 +80,10 @@ class sfSmartyView extends sfPHPView {
 			$this->dispatcher->notify(new sfEvent($this, 'application.log', array('{sfSmartyView} renderFile '.$file)));
 		}
 		
-		if ($this->getExtension() == '.php') {
+		if ($this->getExtension() == '.php' && $this->getAttribute('sf_type') != 'layout') {
 			return parent::renderFile($file);
 		}
+		
 		return $this->getEngine()->renderFile($this, $file);
 	}
 

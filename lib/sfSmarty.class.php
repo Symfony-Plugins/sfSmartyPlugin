@@ -145,7 +145,11 @@ class sfSmarty {
 			$sf_data = $this->getSfData($view, $view->getAttributeHolder()->getEscapingMethod());
 		} elseif ($_escaping === false || $_escaping == 'off') {
 			$sf_data = $this->getSfData($view);
-			self::$smarty->assign($view->getAttributeHolder()->getAll());
+			$data = &$view->getAttributeHolder()->getAll();
+			foreach ($data as $key => &$value) {
+				self::$smarty->assign_by_ref($key, $value);
+			}
+			//self::$smarty->assign($view->getAttributeHolder()->getAll());
 		}	
 		
 		// we need to add the data to smarty
