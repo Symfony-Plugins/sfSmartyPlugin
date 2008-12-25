@@ -10,14 +10,14 @@
   <email>jesse.badwal@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2008-12-06</date>
- <time>19:26:35</time>
+ <date>2008-12-25</date>
+ <time>06:34:35</time>
  <version>
-  <release>0.1.2</release>
+  <release>0.2.0</release>
   <api>1.2.0</api>
  </version>
  <stability>
-  <release>alpha</release>
+  <release>beta</release>
   <api>stable</api>
  </stability>
  <license uri="http://www.symfony-project.org/license">MIT license</license>
@@ -28,9 +28,6 @@
    <file role="data" name="LICENSE" ></file>
    <dir name="config">
     <file role="data" name="autoload.yml" />
-   </dir>
-   <dir name="doc">
-     <file role="data" name="README.pdf" />
    </dir>
    <dir name="lib">
     <file role="data" name="sfSmarty.class.php" />
@@ -60,9 +57,9 @@
    <package>
     <name>symfony</name>
     <channel>pear.symfony-project.com</channel>
-    <min>1.2.0</min>
+    <min>1.1</min>
     <max>1.2</max>
-    <exclude>1.1</exclude>
+    <exclude>1.0</exclude>
    </package>
   </required>
  </dependencies>
