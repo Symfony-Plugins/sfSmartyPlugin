@@ -13,7 +13,7 @@
  <date>2008-12-25</date>
  <time>06:34:35</time>
  <version>
-  <release>0.2.2</release>
+  <release>0.2.3</release>
   <api>1.0.0</api>
  </version>
  <stability>
@@ -67,7 +67,7 @@
     <changelog>
       <release>
         <version>
-          <release>0.2.2</release>
+          <release>0.2.3</release>
           <api>1.0.0</api>
         </version>
         <stability>
@@ -80,7 +80,9 @@
         <date>2008-12-25</date>
         <license>MIT</license>
         <notes>
-           * insaini: Updated README, fixed caching with old partial view class, optimized renderFile and load helpers methods, and allowed rendering of .php via parent class automatically.
+           * insaini: - Updated link_to_app helper method for correct behaviour between environments
+- Updated sfSmarty to assign_by_ref all values from the view
+- Updated sfSmarty to correctly select the renderer for the layout.
         </notes>
       </release>
     </changelog> 
