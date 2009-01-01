@@ -1,15 +1,27 @@
 <?php
+/*
+ * This file is part of the sfSmarty Plugin
+ * (c) 2008 Jesse Badwal <jesse@insaini.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 /**
  * sfSmartyView
  *
- * @package
- * @author georg
- * @copyright Copyright (c) 2008
- * @version $Id$
- * @access public
+ * @package sfSmartyPlugin
+ * @subpackage lib
+ * @author Jesse Badwal <jesse@insaini.com>
+ * @version SVN: $Id: sfSmartyView.class.php 11783 2008-09-25 16:21:27Z insaini $
  **/
 class sfSmartyView extends sfPHPView {
 
+	/**
+	 * SfSmarty Instance
+	 *
+	 * @var sfSmarty
+	 */
 	protected static $smarty = null;
 	
 	/**
@@ -36,9 +48,9 @@ class sfSmartyView extends sfPHPView {
 
 	/**
 	 * sfSmartyView::getEngine()
-	 * returns the smarty instance
+	 * returns the sfSmarty instance
 	 *
-	 * @return smarty instance
+	 * @return sfSmarty instance
 	 */
 	public function getEngine()
 	{
@@ -49,7 +61,7 @@ class sfSmartyView extends sfPHPView {
 	 * sfSmartyView::preRenderCheck()
 	 *
 	 * Does some logic to allow the use of both
-	 * .php and @$this->template_extension files as action views
+	 * .php and smarty template files
 	 *
 	 * @see sfView::preRenderCheck()
 	 **/
@@ -61,7 +73,7 @@ class sfSmartyView extends sfPHPView {
 		catch (sfRenderException $e) {
 			$this->setTemplate(str_replace($this->getExtension(), '.php', $this->getTemplate()));
 			$this->setExtension('.php');
-			parent::configure();		
+			//parent::configure();
 			parent::preRenderCheck();
 		}
 	}
@@ -75,15 +87,14 @@ class sfSmartyView extends sfPHPView {
 	 * @access protected
 	 **/
 	protected function renderFile($file)
-	{
-		if (sfConfig::get('sf_logging_enabled')) {
-			$this->dispatcher->notify(new sfEvent($this, 'application.log', array('{sfSmartyView} renderFile '.$file)));
-		}
-		
+	{	
 		if ($this->getExtension() == '.php' && $this->getAttribute('sf_type') != 'layout') {
 			return parent::renderFile($file);
 		}
 		
+		if (sfConfig::get('sf_logging_enabled')) {
+			$this->dispatcher->notify(new sfEvent($this, 'application.log', array('{sfSmartyView} renderFile '.$file)));
+		}
 		return $this->getEngine()->renderFile($this, $file);
 	}
 

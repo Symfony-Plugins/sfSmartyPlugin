@@ -10,10 +10,10 @@
   <email>jesse.badwal@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2008-12-25</date>
- <time>06:34:35</time>
+ <date>2008-12-31</date>
+ <time>17:34:35</time>
  <version>
-  <release>0.2.3</release>
+  <release>0.3.0</release>
   <api>1.0.0</api>
  </version>
  <stability>
@@ -67,7 +67,7 @@
     <changelog>
       <release>
         <version>
-          <release>0.2.3</release>
+          <release>0.3.0</release>
           <api>1.0.0</api>
         </version>
         <stability>
@@ -77,12 +77,10 @@
         <license uri="http://www.symfony-project.com/license">
           MIT license
         </license>
-        <date>2008-12-25</date>
+        <date>2008-12-31</date>
         <license>MIT</license>
         <notes>
-           * insaini: - Updated link_to_app helper method for correct behaviour between environments
-- Updated sfSmarty to assign_by_ref all values from the view
-- Updated sfSmarty to correctly select the renderer for the layout.
+           * insaini: - Updated sfSmartyView compilation process and modifier support.
         </notes>
       </release>
     </changelog> 

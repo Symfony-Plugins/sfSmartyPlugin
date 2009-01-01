@@ -1,12 +1,19 @@
 <?php
+/*
+ * This file is part of the sfSmarty Plugin
+ * (c) 2008 Jesse Badwal <jesse@insaini.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 /**
  * sfSmarty
  *
- * @package
- * @author jbadwal
- * @copyright Copyright (c) 2008
- * @version $Id$
- * @access public
+ * @package sfSmartyPlugin
+ * @subpackage lib
+ * @author Jesse Badwal <jesse@insaini.com>
+ * @version SVN: $Id: sfSmarty.class.php 11783 2008-09-25 16:21:27Z insaini $
  **/
 class sfSmarty {
 
@@ -102,8 +109,7 @@ class sfSmarty {
    	}
    	
    	/**
-   	 * Escapes smarty stored vars and stores in sf_data
-   	 * // TODO: Optimize.. Data is often escaped multiple times
+   	 * Escapes smarty stored vars for sfData
    	 *
    	 * @param sfSmartyView $view
    	 * @param integer $escaping
@@ -112,7 +118,7 @@ class sfSmarty {
    	private function getSfData($view, $escaping = ESC_RAW) 
    	{
    		$current_sf_data = self::$smarty->get_template_vars('sf_data');
-		if (!empty($current_sf_data) && $view->getAttributeHolder()->get('sf_type') == 'partial') {
+		if (!empty($current_sf_data) && $view->getAttribute('sf_type') == 'partial') {
 			if (isset($current_sf_data['sf_content'])) {
 				$view->getAttributeHolder()->set('sf_content',$current_sf_data['sf_content']);
 			}
@@ -136,7 +142,11 @@ class sfSmarty {
 		$sf_params = $sf_request->getParameterHolder();
 		$sf_user = $sf_context->getUser();
 		
-		self::$smarty->compile_id = $view->getModuleName();
+		if ($view->getAttribute('sf_type') == 'layout') {
+			self::$smarty->compile_id = $view->getDecoratorTemplate();				
+		} else {
+			self::$smarty->compile_id = $view->getModuleName();
+		}
 		
 		$this->loadCoreAndStandardHelpers();
 		
@@ -149,7 +159,6 @@ class sfSmarty {
 			foreach ($data as $key => &$value) {
 				self::$smarty->assign_by_ref($key, $value);
 			}
-			//self::$smarty->assign($view->getAttributeHolder()->getAll());
 		}	
 		
 		// we need to add the data to smarty
@@ -182,9 +191,7 @@ class sfSmarty {
 		$standard_helpers = sfConfig::get('sf_standard_helpers');
 		$helpers = array_unique(array_merge($core_helpers, $standard_helpers));
 		foreach ($helpers as $helperName) {
-			if (!isset(self::$loadedHelpers[$helperName])) {
-				$this->loadHelper($helperName);
-			}
+			$this->loadHelper($helperName);
 		}
 		$smarty_helpers = sfConfig::get('sf_smarty_helpers');
 		sfProjectConfiguration::getActive()->loadHelpers(array_unique(array_merge($helpers, $smarty_helpers)));
@@ -199,37 +206,32 @@ class sfSmarty {
 	 **/
 	protected function loadHelper($helperName)
 	{
-		if (!self::$cache->has($helperName)) {
-			static $dirs;
-			if (!is_array($dirs)) {	
-				$dirs = sfProjectConfiguration::getActive()->getHelperDirs(/*$moduleName*/);
-			}
-			
-			$fileName = $helperName . 'Helper.php';
-			$path = '';
-			foreach($dirs as $dir) {
-				if (is_readable($dir . DIRECTORY_SEPARATOR . $fileName)) {
-					$path = $dir . DIRECTORY_SEPARATOR . $fileName;
-				    self::$cache->set($helperName, self::parseFile($path));
-					break;
+		if (!isset(self::$loadedHelpers[$helperName])) {
+			if (!self::$cache->has($helperName)) {
+				static $dirs;
+				if (!is_array($dirs)) {	
+					$dirs = sfProjectConfiguration::getActive()->getHelperDirs(/*$moduleName*/);
+				}
+				
+				$fileName = $helperName . 'Helper.php';
+				$path = '';
+				foreach($dirs as $dir) {
+					if (is_readable($dir . DIRECTORY_SEPARATOR . $fileName)) {
+						$path = $dir . DIRECTORY_SEPARATOR . $fileName;
+					    self::$cache->set($helperName, self::parseHelper($helperName, $path));
+						break;
+					}
 				}
 			}
+			
+			eval(self::$cache->get($helperName));
+			self::$loadedHelpers[$helperName] = true;
 		}
-		eval(self::$cache->get($helperName));
-		self::$loadedHelpers[$helperName] = true;
 	}
 	
-
-	/**
-	 * sfSmarty::parseFile()
-	 *
-	 * @param mixed $path
-	 * @return
-	 **/
-	protected static function parseFile($path)
+	protected static function parseHelper($helperName, $path)
 	{
-		if (self::$log) self::$log->info('{sfSmarty} parsing file: ' . $path . ' into the Smarty helper cache');	        
-		//$code = '<?php ';
+		if (self::$log) self::$log->info('{sfSmarty} parsing helper: ' . $path . ' into the Smarty helper cache');	        
 		$code = '';
 		$lines = file($path);
 		foreach($lines as $line) {
@@ -248,6 +250,7 @@ class sfSmarty {
 					$code .= 'array()';
 				}
 				$code .= ";\nself::registerCompilerFunction('$name', array(\$this, '{$name}_CompilerFunction'));";
+				$code .= ";\nself::registerModifier('$name', array(\$this, '{$name}_Modifier'));";				
 			}
 		}
 		return $code;
@@ -257,94 +260,23 @@ class sfSmarty {
 	 * sfSmarty::parseArguments()
 	 *
 	 * @param mixed $argumentString
-	 * @param boolean $smarty
-	 * @return
+	 * @return array
 	 **/
-	protected static function parseArguments($argumentString, $smarty = false)
+	protected static function parseArguments($argumentString)
 	{
-		$argumentString .= $smarty ? ' ' : ',';
-		$inDoubleQuotes = false;
-		$inSingleQuotes = false;
+		$ex_arg_str = explode(',',$argumentString);
+		
 		$args = array();
-		$argumentName = '';
-		$defaultValue = '';
-		$parsingDefaultValue = false;
-		$inArray = 0;
-		for ($i = 0; $i < strlen($argumentString); $i++) {
-			$letter = $argumentString{$i};
-			if (!$smarty && !$inDoubleQuotes && !$inSingleQuotes && ($letter == ' ' || $letter == '	')) {
+		foreach ($ex_arg_str as &$ex_arg) {
+			$par = explode('=',$ex_arg);
+			$key = trim($par[0]);
+			if (count($par) === 1) {
+				$args[$key] = array();	
 				continue;
 			}
-			if (!$parsingDefaultValue) {
-				if (preg_match('/\\w/', $letter) || $letter == '$' || $letter == '>') {
-					$argumentName .= $letter;
-				} elseif ($letter == '=') {
-					$parsingDefaultValue = true;
-				} elseif ((!$smarty && $letter == ',') || ($letter == ' ' || $letter == '	')) {
-					$args[$argumentName] = array();
-					$argumentName = '';
-				} elseif ($letter == '&') {
-				} else {
-					print_r($args);
-					die("$inDoubleQuotes/$inSingleQuotes/$argumentName/$defaultValue/$parsingDefaultValue/'$letter'\n$argumentString\nI wonder...");
-				}
-			} else {
-				switch ($letter) {
-					case '(':
-						if (!$inSingleQuotes && !$inDoubleQuotes) {
-							$inArray++;
-							if (self::$templateSecurity && strcasecmp(substr($defaultValue, -5), 'array')) {
-								throw new Exception('sfSmartyView: You may not use PHP functions in a template! "' . $defaultValue . '"');
-							}
-						}
-						$defaultValue .= $letter;
-						break;
-					case ')':
-						if (!$inSingleQuotes && !$inDoubleQuotes) {
-							$inArray--;
-						}
-						$defaultValue .= $letter;
-						break;
-					case ',':
-						if ($inSingleQuotes || $inDoubleQuotes || $inArray) {
-							$defaultValue .= $letter;
-						} elseif (!$smarty) {
-							$parsingDefaultValue = false;
-							$args[$argumentName] = array('default' => $defaultValue);
-							$argumentName = '';
-							$defaultValue = '';
-						}
-						break;
-					case '"':
-						if (!$inSingleQuotes) {
-							$inDoubleQuotes ^= true;
-						}
-						$defaultValue .= $letter;
-						break;
-					case "'":
-						if (!$inDoubleQuotes) {
-							$inSingleQuotes ^= true;
-						}
-						$defaultValue .= $letter;
-						break;
-					case ' ':
-					case '	':
-						if (!($inSingleQuotes || $inDoubleQuotes || $inArray)) {
-							$parsingDefaultValue = false;
-							$args[$argumentName] = preg_replace('/\\$(\\w+)/', '$this->_tpl_vars[\'$1\']', $defaultValue);
-							$argumentName = '';
-							$defaultValue = '';
-						} else {
-							$defaultValue .= $letter;
-						}
-						break;
-					default:
-						$defaultValue .= $letter;
-				} // switch
-			}
-		}
-		if (isset($args[''])) {
-			unset($args['']);
+			
+			$val = trim($par[1]);
+			$args[$key] = array('default' => $val);
 		}
 		return $args;
 	}
@@ -376,71 +308,11 @@ class sfSmarty {
 	public static function smartyPostFilter($content, Smarty $smarty)
 	{
 		$helpers = '';
-		foreach(self::$loadedHelpers as $helper => $dummy) {
-			$helpers .= "use_helper('$helper');";
-		}
-		if ($helpers) {
+		if (count(self::$loadedHelpers)) {
+			$helpers .= "use_helper('".implode("','",array_keys(self::$loadedHelpers))."');";
 			$helpers = "<?php $helpers ?>";
 		}
 		return $helpers . $content;
-	}
-	
-	/**
-	 * sfSmarty::__call()
-	 * generic compiler function for all new tags
-	 *
-	 * @param mixed $functionName
-	 * @param mixed $argsArray
-	 * @return
-	 **/
-	public function __call($functionName, $argsArray)
-	{
-		if (!trim($argsArray[0])) {
-			$args = array();
-		} else {
-			$args = $this->parseArguments($argsArray[0], true);
-		}
-		$functionName = str_replace('_CompilerFunction', '', $functionName);
-		$argsOrder = $allArgs = (array)self::$knownFunctions[$functionName];
-		$helperWithVarArgs = count($allArgs) == 0;
-		$cacheArgs = array();
-		foreach($args as $name => $value) {
-			$name = '$' . trim($name);
-			$value = trim($value);
-			if (!isset($allArgs[$name]) && !$helperWithVarArgs) {
-				throw new Exception('sfSmartyView: Cannot compile template. Unknown field found: "' . substr($name, 1) . '" near tag ' . $functionName);
-			}
-			$cacheArgs[$name] = $value;
-			unset($allArgs[$name]);
-		}
-		foreach($allArgs as $name => $default) {
-			if (!isset($default['default'])) {
-				throw new Exception('sfSmartyView: Cannot compile template. Required field "' . substr($name, 1) . '" not found near tag ' . $functionName);
-			}
-			$cacheArgs[$name] = $default['default'];
-		}
-		$code = '';
-		if (!$helperWithVarArgs) {
-			foreach($argsOrder as $name => $value) {
-				$code .= $code?',':'';
-				if (is_bool($value)) {
-					$code .= $cacheArgs[$name]?'true':'false';
-				} else {
-					$code .= $cacheArgs[$name];
-				}
-			}
-		} else {
-			foreach($cacheArgs as $name => $value) {
-				$code .= $code?',':'';
-				if (is_bool($value)) {
-					$code .= $value?'true':'false';
-				} else {
-					$code .= $value;
-				}
-			}
-		}
-		$code = "echo $functionName($code);\n";
-		return $code;
 	}
 
 	/**
@@ -497,5 +369,72 @@ class sfSmarty {
 	public static function registerModifier($tag, $function)
 	{
 		self::$smarty->register_modifier($tag, $function);
-	}    
+	}   
+
+	/**
+	 * sfSmarty::__call()
+	 * generic compiler function for all new tags
+	 *
+	 * @param mixed $functionName
+	 * @param mixed $argsArray
+	 * @return
+	 **/
+	public function __call($functionName, $argsArray)
+	{		
+		$return = '';
+		if (strpos($functionName, '_Modifier') !== FALSE) {
+			$return = call_user_func_array(str_replace('_Modifier', '', $functionName), $argsArray);
+		} else if (strpos($functionName, '_CompilerFunction') !== FALSE) {
+			if (!trim($argsArray[0]) || !is_object($argsArray[1])) {
+				$args = array();
+			} else {
+				$args = $argsArray[1]->_parse_attrs($argsArray[0]);	
+			}
+			$return = $this->_processCompilerFunction(str_replace('_CompilerFunction', '', $functionName), $args);
+		}
+		return $return;		
+	}
+		
+	/**
+	 * sfSmarty::_processCompilerFunction()
+	 *
+	 * @param string $functionName
+	 * @param array $args
+	 * @return string
+	 */
+	private function _processCompilerFunction($functionName, $args) 
+	{
+		$argsOrder = $allArgs = (array)self::$knownFunctions[$functionName];
+		$helperWithVarArgs = count($allArgs) == 0;
+		$cacheArgs = array();
+		foreach($args as $name => $value) {
+			$name = '$' . trim($name);
+			$value = trim($value);
+			if (!isset($allArgs[$name]) && !$helperWithVarArgs) {
+				throw new Exception('sfSmartyView: Cannot compile template. Unknown field found: "' . substr($name, 1) . '" near tag ' . $functionName);
+			}
+			$cacheArgs[$name] = $value;
+			unset($allArgs[$name]);
+		}
+		foreach($allArgs as $name => $default) {
+			if (!isset($default['default'])) {
+				throw new Exception('sfSmartyView: Cannot compile template. Required field "' . substr($name, 1) . '" not found near tag ' . $functionName);
+			}
+			$cacheArgs[$name] = $default['default'];
+		}
+		$code = '';
+		if (!$helperWithVarArgs) {
+			foreach($argsOrder as $name => $value) {
+				$code .= $code ? ',' : '';
+				if (is_bool($value)) {
+					$code .= $cacheArgs[$name]?'true':'false';
+				} else {
+					$code .= $cacheArgs[$name];
+				}
+			}
+		} else {
+			$code .= implode(',',array_values($cacheArgs));
+		}
+		return "echo $functionName($code);";		
+	}
 }

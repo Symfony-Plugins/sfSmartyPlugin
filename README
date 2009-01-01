@@ -125,6 +125,7 @@ Smarty internal functions for looping and conditions work as is and should be us
 
 Refer to the Smarty documentation. 
 
+### Symfony Helpers ###
 The Javascript helper tag is also available and must be used as such:
 
 	{javascript}
@@ -141,6 +142,20 @@ To attach helpers:
 
 The {use} tag does not accept an array of values currently.
 
+All other helpers are used as compiler methods in Smarty. That is you would use the function name after the opening brace.
+	{include_component moduleName='default' componentName'test'}
+
+As well all symfony helper methods are also modifiers meaning they can be used within compiler function calls like so
+	{url_for internal_uri="foo/bar"|cat:"?command=new"}
+This will concatenate 'command=new' to 'foo/bar' and of course the modifier can be a variable.
+
+Another example would be link_to with an image:
+	{link_to name="foo_icon.gif"|image_tag routeName='@foobar'}
+And if you need image_tag to take additional parameters
+	{link_to name="foo_icon.gif"|image_tag:par2:par3 routeName='@foobar'}
+where par1 to image_tag is of course "foo_icon.gif"
+
+### Symfony Actions ###
 Smarty can also be utilized within actions via static calls. In an action:
 
 	$smarty = sfSmarty::getInstance()->getSmarty();
@@ -148,9 +163,11 @@ Smarty can also be utilized within actions via static calls. In an action:
 
 $foobar will then be available as an object reference in your template.
 
+
 ## Final Notes ##
 
-I have tried to optimize certain methods and have cleaned up some from the last 0.12 release.
+The sfSmartyPlugin has been improved considerably over the last couple weeks and there is still further improvements that can be made.
+Specifically the compiler method should also compile modifier scripts if they are not smarty internal modifiers. Currently the modifiers will run through Smarty which adds extra overhead and is not necessary.
 
 Helpers that are used are cached and will also be loaded from the cache after that. Smarty also compiles the templates and once compiled are always loaded until modified.
 

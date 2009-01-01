@@ -1,14 +1,16 @@
 <?php
 use_helper('Url');
 /**
-* link_to with additionnal param : $app
-*
-* @param string name of the link, i.e. string to appear between the <a> tags
-* @param string 'module/action' or '@rule' of the action
-* @param array additional HTML compliant <a> tag parameters
-* @param string name of the application
-* @return string XHTML compliant <a href> tag
-*/
+ * Link between applications
+ *
+ * @param string $app name of application
+ * @param strubg $name name of hte link, i.e. string to appear between <a> tags
+ * @param string $internal_uri 'module/action' or '@route' of the action
+ * @param array $options additional HTML compliant <a> tag parameters
+ * @param boolean $subdomain if linking to another subdomain or to a folder under the current domain
+ * @param string $path path of the folder, if linking to a folder under the current domain
+ * @return string
+ */
 function link_to_app($app, $name = '', $internal_uri = '', $options = array(), $subdomain = true, $path = '/') {
 	$current_app = sfConfig::get('sf_app');
 	$environment = (sfConfig::get('sf_environment') == 'prod') ? "" : "_".sfConfig::get('sf_environment');
