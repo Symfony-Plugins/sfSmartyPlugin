@@ -30,6 +30,8 @@ class sfSmarty {
   	protected static $loadedHelpers;
     protected static $knownFunctions;
     
+    private $templateHelpers;
+    
     /**
      * sfSmarty constructor
      *
@@ -103,7 +105,7 @@ class sfSmarty {
 				if (self::$log) self::$log->info(sprintf('{sfSmarty} creating cache directory: %s', self::$smarty->cache_dir));
 			}
 			self::$smarty->register_compiler_function('use', array($this, 'smartyCompilerfunctionUse'));
-			self::$smarty->register_postfilter(array('sfSmarty', 'smartyPostFilter'));
+			self::$smarty->register_postfilter(array($this, 'smartyPostFilter'));
 		}			
 		return self::$smarty;
    	}
@@ -148,6 +150,7 @@ class sfSmarty {
 			self::$smarty->compile_id = $view->getModuleName();
 		}
 		
+		$this->templateHelpers = array();
 		$this->loadCoreAndStandardHelpers();
 		
 		$_escaping = $view->getAttributeHolder()->getEscaping();
@@ -178,7 +181,24 @@ class sfSmarty {
 		
 		return self::$smarty->fetch("file:$file");       		
 	}
-	    
+
+	/**
+	 * Process array of helpers for loading and maintaining loaded data
+	 *
+	 * @param array $helpers
+	 * @param array $list
+	 */
+	private function processHelpers(&$helpers, &$list) 
+	{
+		foreach ($helpers as &$helper) {
+			$name = trim($helper);
+			if (!isset($list[$name])) {
+				$this->loadHelper($name);
+				$list[$name] = true;
+			}
+		}		
+	}
+	
 	/**
 	 * sfSmarty::loadCoreAndStandardHelpers()
 	 *
@@ -190,13 +210,13 @@ class sfSmarty {
 		$core_helpers = array('Helper', 'Url', 'Asset', 'Tag', 'Escaping', 'AppUrl');
 		$standard_helpers = sfConfig::get('sf_standard_helpers');
 		$helpers = array_unique(array_merge($core_helpers, $standard_helpers));
-		foreach ($helpers as $helperName) {
-			$this->loadHelper($helperName);
-		}
+		
+		$this->processHelpers($helpers, self::$loadedHelpers);
+		
 		$smarty_helpers = sfConfig::get('sf_smarty_helpers');
 		sfProjectConfiguration::getActive()->loadHelpers(array_unique(array_merge($helpers, $smarty_helpers)));
 	}
-
+	
 	/**
 	 * sfSmarty::loadHelper()
 	 *
@@ -206,29 +226,32 @@ class sfSmarty {
 	 **/
 	protected function loadHelper($helperName)
 	{
-		if (!isset(self::$loadedHelpers[$helperName])) {
-			if (!self::$cache->has($helperName)) {
-				static $dirs;
-				if (!is_array($dirs)) {	
-					$dirs = sfProjectConfiguration::getActive()->getHelperDirs(/*$moduleName*/);
-				}
-				
-				$fileName = $helperName . 'Helper.php';
-				$path = '';
-				foreach($dirs as $dir) {
-					if (is_readable($dir . DIRECTORY_SEPARATOR . $fileName)) {
-						$path = $dir . DIRECTORY_SEPARATOR . $fileName;
-					    self::$cache->set($helperName, self::parseHelper($helperName, $path));
-						break;
-					}
-				}
+		if (!self::$cache->has($helperName)) {
+			static $dirs;
+			if (!is_array($dirs)) {	
+				$dirs = sfProjectConfiguration::getActive()->getHelperDirs(/*$moduleName*/);
 			}
 			
-			eval(self::$cache->get($helperName));
-			self::$loadedHelpers[$helperName] = true;
-		}
+			$fileName = $helperName . 'Helper.php';
+			$path = '';
+			foreach($dirs as $dir) {
+				if (is_readable($dir . DIRECTORY_SEPARATOR . $fileName)) {
+					$path = $dir . DIRECTORY_SEPARATOR . $fileName;
+				    self::$cache->set($helperName, self::parseHelper($helperName, $path));
+					break;
+				}
+			}
+		}	
+		eval(self::$cache->get($helperName));
 	}
 	
+	/**
+	 * Parse Helper file for caching
+	 *
+	 * @param string $helperName
+	 * @param string $path
+	 * @return string
+	 */
 	protected static function parseHelper($helperName, $path)
 	{
 		if (self::$log) self::$log->info('{sfSmarty} parsing helper: ' . $path . ' into the Smarty helper cache');	        
@@ -294,7 +317,8 @@ class sfSmarty {
 		if (!preg_match('/helper="([^"]+)"/', $content, $matches)) {
 			throw new Exception('sfSmartyView: Cannot compile template. Use: {use helper="helpername"}');
 		}
-		$this->loadHelper($matches[1]);
+		$helpers = explode(",",$matches[1]);
+		$this->processHelpers($helpers, $this->templateHelpers);
 		return '';
 	}
 	
@@ -305,11 +329,11 @@ class sfSmarty {
 	 * @param Smarty $smarty
 	 * @return
 	 **/
-	public static function smartyPostFilter($content, Smarty $smarty)
+	public function smartyPostFilter($content, Smarty $smarty)
 	{
 		$helpers = '';
-		if (count(self::$loadedHelpers)) {
-			$helpers .= "use_helper('".implode("','",array_keys(self::$loadedHelpers))."');";
+		if (count($this->templateHelpers)) {
+			$helpers .= "use_helper('".implode("','",array_keys($this->templateHelpers))."');";
 			$helpers = "<?php $helpers ?>";
 		}
 		return $helpers . $content;

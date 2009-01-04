@@ -10,10 +10,10 @@
   <email>jesse.badwal@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2008-12-31</date>
+ <date>2009-01-03</date>
  <time>17:34:35</time>
  <version>
-  <release>0.3.0</release>
+  <release>0.3.5</release>
   <api>1.0.0</api>
  </version>
  <stability>
@@ -40,10 +40,6 @@
      <file role="data" name="SmartyTagHelper.php" />
      <file role="data" name="AppUrlHelper.php"></file></dir>
    </dir>
-   <dir name="templates">
-    <file role="data" name="indexSuccess.tpl" />
-    <file role="data" name="layout.tpl" />
-   </dir>
   </dir>
  </contents>
  <dependencies>
@@ -67,7 +63,7 @@
     <changelog>
       <release>
         <version>
-          <release>0.3.0</release>
+          <release>0.3.5</release>
           <api>1.0.0</api>
         </version>
         <stability>
@@ -77,11 +73,9 @@
         <license uri="http://www.symfony-project.com/license">
           MIT license
         </license>
-        <date>2008-12-31</date>
+        <date>2009-01-03</date>
         <license>MIT</license>
-        <notes>
-           * insaini: - Updated sfSmartyView compilation process and modifier support.
-        </notes>
+        <notes>* insaini: - Updated use helper method to accept comma delimited list and update helper compilation process for cleaner compiled templates.</notes>
       </release>
     </changelog> 
 </package>

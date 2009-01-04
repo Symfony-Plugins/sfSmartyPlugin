@@ -140,7 +140,9 @@ To attach helpers:
 
 	{use helper='Javascript'}
 
-The {use} tag does not accept an array of values currently.
+The {use} tag now accepts a comma delimited string list to load multiple helpers in one 'use' statement
+
+	{use helper='Javascript, jQuery, etc'}
 
 All other helpers are used as compiler methods in Smarty. That is you would use the function name after the opening brace.
 	{include_component moduleName='default' componentName'test'}
