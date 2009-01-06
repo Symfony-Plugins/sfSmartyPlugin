@@ -80,7 +80,7 @@ class sfSmarty {
 				$smartyClassPath .= DIRECTORY_SEPARATOR;
 			}
 
-			require_once(dirname(__FILE__).'/../../../'.$smartyClassPath . 'Smarty.class.php');
+			require_once(sfConfig::get('sf_root_dir').DIRECTORY_SEPARATOR.$smartyClassPath.'/libs/Smarty.class.php');
 			self::$smarty = new Smarty();
 
 			// set the smarty cache directory

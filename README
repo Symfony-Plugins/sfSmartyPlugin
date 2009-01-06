@@ -27,11 +27,11 @@ Once you have installed smarty, you must edit the app.yml in each of your applic
 	# default values
 	all:
 	  sfSmarty:
-	    class_path: lib/vendor/smarty/libs
+	    class_path: lib/vendor/smarty
 	    template_extension: .tpl
 	    template_security: false
 
-The Smarty.class.php file is located under your smarty/libs folder. Thus the /libs on the end of the class_path.
+where smarty is the location of the Smarty installation.
 
 Clear the cache to enable the autoloading to find the new classes:
 

@@ -10,10 +10,10 @@
   <email>jesse.badwal@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2009-01-03</date>
+ <date>2009-01-05</date>
  <time>17:34:35</time>
  <version>
-  <release>0.3.5</release>
+  <release>0.3.6</release>
   <api>1.0.0</api>
  </version>
  <stability>
@@ -63,7 +63,7 @@
     <changelog>
       <release>
         <version>
-          <release>0.3.5</release>
+          <release>0.3.6</release>
           <api>1.0.0</api>
         </version>
         <stability>
@@ -73,9 +73,9 @@
         <license uri="http://www.symfony-project.com/license">
           MIT license
         </license>
-        <date>2009-01-03</date>
+        <date>2009-01-05</date>
         <license>MIT</license>
-        <notes>* insaini: - Updated use helper method to accept comma delimited list and update helper compilation process for cleaner compiled templates.</notes>
+        <notes>* insaini: - Updated require_once to work with both PEAR installed Symfony or Symfony installed as an external</notes>
       </release>
     </changelog> 
 </package>
