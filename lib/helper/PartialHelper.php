@@ -136,10 +136,10 @@ function get_component($moduleName, $componentName, $vars = array())
   $context = sfContext::getInstance();
   $actionName = '_'.$componentName;
   
-  $config = sfConfig::get('mod_'.$moduleName.'_partial_view_class');  
+  $config = sfConfig::get('mod_'.strtolower($moduleName).'_partial_view_class');  
   if (empty($config)) {
   	require(sfContext::getInstance()->getConfigCache()->checkConfig('modules/'.$moduleName.'/config/module.yml', true)); 
-  	$config = sfConfig::get('mod_'.$moduleName.'_partial_view_class','sf'); 
+  	$config = sfConfig::get('mod_'.strtolower($moduleName).'_partial_view_class','sf'); 
   }
   
   $class =  $config.'PartialView';
@@ -217,10 +217,10 @@ function get_partial($templateName, $vars = array())
   }
   $actionName = '_'.$templateName;
 
-  $config = sfConfig::get('mod_'.$moduleName.'_partial_view_class');  
+  $config = sfConfig::get('mod_'.strtolower($moduleName).'_partial_view_class');  
   if (empty($config)) {
   	require(sfContext::getInstance()->getConfigCache()->checkConfig('modules/'.$moduleName.'/config/module.yml', true)); 
-  	$config = sfConfig::get('mod_'.$moduleName.'_partial_view_class','sf'); 
+  	$config = sfConfig::get('mod_'.strtolower($moduleName).'_partial_view_class','sf'); 
   }
   $class =  $config.'PartialView';
   $view = new $class($context, $moduleName, $actionName, '');
